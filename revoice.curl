@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$#" -lt 3 ]; then
+  echo "Usage: $0 <VOICE_ID> <INPUT_FILE> <OUTPUT_FILE>"
+  exit
+fi
+
+VOICE_ID=$1
+INPUT_FILE=$2
+OUTPUT_FILE=$3
+curl -X POST "https://api.elevenlabs.io/v1/speech-to-speech/$VOICE_ID" \
+     -H "xi-api-key: $ELEVENLABS_API_KEY" \
+     -H "Content-Type: multipart/form-data" \
+     -F "audio=@$INPUT_FILE" \
+     > $OUTPUT_FILE
