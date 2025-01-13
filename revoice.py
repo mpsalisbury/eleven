@@ -20,41 +20,41 @@ flags.DEFINE_string('o', '', 'Output directory')
 flags.DEFINE_integer('n', 1, 'Count (0 = all)')
 flags.DEFINE_string('voice', '', 'Target voice config file')
 flags.DEFINE_boolean('dryrun', True, "Don't revoice any files")
-flags.DEFINE_boolean('curl', True,
-                     "Use curl to call revoice service (else api)")
+flags.DEFINE_boolean('curl', False,
+                     "Use curl to call revoice service (instead of api)")
+
+# Retrieve the API key
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+if not ELEVENLABS_API_KEY:
+    raise ValueError("ELEVENLABS_API_KEY environment variable not found. "
+                     "Please set the API key in your environment variables.")
+
+client11 = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
 
-def revoice_curl(input_file_path, output_file_path, voice_id):
-    print("Revoice curl")
+# Since we can't seem to get the python api call to work, here's a hack to
+# make the api call via curl.
+def revoice_curl(input_file_path, output_file_path, voice):
     p = subprocess.run(
-        f"./revoice.curl {voice_id} {input_file_path} {output_file_path}",
+        f"./revoice.curl {voice['id']} {input_file_path} {output_file_path}",
         shell=True,
         check=True)
 
 
-def revoice_api(input_file_path, output_file_path, voice_id):
-    print("Revoice api")
-    # Install api key into environment first.
-    client = ElevenLabs()
-    with open(input_file_path, "rb") as audio_file:
-        #        response = client.text_to_speech.convert(
-        #            voice_id=voice_id,
-        #            text='This, is a test',
-        #            output_format="mp3_44100_192",
-        #        )
-
-        response = client.speech_to_speech.convert(
-            audio=(input_file_path.name, audio_file, 'audio/wav'),
-            voice_id=voice_id,
+def revoice_api(input_file_path, output_file_path, voice):
+    with open(input_file_path, "rb") as input_audio_file:
+        response = client11.speech_to_speech.convert(
+            audio=(input_file_path.name, input_audio_file.read(), 'audio/wav'),
+            voice_id=voice['id'],
             output_format="mp3_44100_192",
-            #            model_id="eleven_english_sts_v2",
-            #            # model_id="eleven_multilingual_sts_v2",
-            #            voice_settings=VoiceSettings(
-            #                stability=voice['settings']['stability'],
-            #                similarity_boost=voice['settings']['similarity'],
-            #                style=voice['settings']['style'],
-            #                use_speaker_boost=False,
-            #            ).json(),
+            model_id="eleven_english_sts_v2",
+            # model_id="eleven_multilingual_sts_v2",
+            voice_settings=VoiceSettings(
+                stability=voice['settings']['stability'],
+                similarity_boost=voice['settings']['similarity'],
+                style=voice['settings']['style'],
+                use_speaker_boost=False,
+            ).json(),
         )
 
     if not response:
@@ -84,9 +84,9 @@ def revoiceFile(input_file_path, output_file_path, voice):
         return
 
     if FLAGS.curl:
-        revoice_curl(input_file_path, output_file_path, voice['id'])
+        revoice_curl(input_file_path, output_file_path, voice)
     else:
-        revoice_api(input_file_path, output_file_path, voice['id'])
+        revoice_api(input_file_path, output_file_path, voice)
 
 
 def revoiceDirectory(input_dir, output_dir, voice):
