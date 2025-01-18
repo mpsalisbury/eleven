@@ -32,10 +32,9 @@ if not ELEVENLABS_API_KEY:
 client11 = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
 
-# Since we can't seem to get the python api call to work, here's a hack to
-# make the api call via curl.
+# A curl-based version for when the api wasn't working.
 def revoice_curl(input_file_path, output_file_path, voice):
-    p = subprocess.run(
+    subprocess.run(
         f"./revoice.curl {voice['id']} {input_file_path} {output_file_path}",
         shell=True,
         check=True)
@@ -44,7 +43,7 @@ def revoice_curl(input_file_path, output_file_path, voice):
 def revoice_api(input_file_path, output_file_path, voice):
     with open(input_file_path, "rb") as input_audio_file:
         response = client11.speech_to_speech.convert(
-            audio=(input_file_path.name, input_audio_file.read(), 'audio/wav'),
+            audio=(input_file_path.name, input_audio_file.read(), 'audio/mp4'),
             voice_id=voice['id'],
             output_format="mp3_44100_192",
             model_id="eleven_english_sts_v2",
@@ -75,9 +74,9 @@ def revoiceFile(input_file_path, output_file_path, voice):
     if not os.path.isfile(input_file_path):
         raise FileNotFoundError(
             f"The input file does not exist: {input_file_path}")
-    if input_file_path.suffix not in ['.wav', '.mp3']:
-        raise FileNotFoundError(
-            f"The input file is not an audio type: {input_file_path}")
+    if input_file_path.suffix not in ['.m4a', '.mp3']:
+        print(f"Skipping non-audio file {input_file_path}")
+        return
 
     if FLAGS.dryrun:
         print('Dry run -- not revoicing')
